@@ -2,55 +2,33 @@
 #define POLYNOMIAL_H
 
 #include <string>
+#include <memory>
 
 class Polynomial {
-
-private:
-    // Node struct and head for linked list storage
-    struct Node {
-        int coeff, exp;
-        Node* next;
-        Node(int c, int e) : coeff(c), exp(e), next(nullptr) {}
-
-    };
-
-    // Singly Linked List head
-    Node* head;
-
-    // Helper method to free nodes
-    void clear();
-
-    // Helper method to copy nodes
-    void copy(const Polynomial& other);
-
 public:
-    // Constructor
-    Polynomial();
-
-    // Destructor
-    ~Polynomial();
-
-    // Copy constructor
-    Polynomial(const Polynomial& other);
-
-    // Assignment operator
-    Polynomial& operator=(const Polynomial& other);
+    virtual ~Polynomial() = default;
 
 
     // Insert a term into the polynomial
-    void insertTerm(int coefficient, int exponent);
+    virtual void insertTerm(int coefficient, int exponent) = 0;
 
     // Return polynomial as a human-readable string
-    std::string toString() const;
+    virtual std::string toString() const = 0;
+
 
     // Return a new polynomial that is the sum of this and other
-    Polynomial add(const Polynomial& other) const;
+    virtual std::unique_ptr<Polynomial> add(const Polynomial& other) const = 0;
 
     // Return a new polynomial that is the product of this and other
-    Polynomial multiply(const Polynomial& other) const;
+    virtual std::unique_ptr<Polynomial> multiply(const Polynomial& other) const = 0;
 
     // Return a new polynomial that is the derivative of this polynomial
-    Polynomial derivative() const;
+    virtual std::unique_ptr<Polynomial> derivative() const = 0;
+
+
+    // Create concrete instance
+    static std::unique_ptr<Polynomial> create();
+
 };
 
 #endif

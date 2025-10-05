@@ -2,23 +2,31 @@
 #define TEXTEDITOR_H
 
 #include <string>
+#include <memory>
 
 class TextEditor {
 public:
+    virtual ~TextEditor() = default;
+    
     // Insert character at cursor
-    void insertChar(char c);
+    virtual void insertChar(char c) = 0;
 
     // Delete character before cursor
-    void deleteChar();
+    virtual void deleteChar() = 0;
 
     // Move cursor one position left
-    void moveLeft();
+    virtual void moveLeft() = 0;
 
     // Move cursor one position right
-    void moveRight();
+    virtual void moveRight() = 0;
 
+    
     // Return string with cursor position
-    std::string getTextWithCursor() const;
+    virtual std::string getTextWithCursor() const = 0;
+
+
+    // Create a concrete instance
+    static std::unique_ptr<TextEditor> create();
 };
 
 #endif

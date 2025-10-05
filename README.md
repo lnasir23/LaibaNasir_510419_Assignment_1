@@ -2,14 +2,32 @@
 Data Structures and Algorithms (CS250) Assignment 1 - Polynomial, Text Editor, and Uno Game
 
 ## Approach:
-- Polynomial ADT: This program was implemented using a singly linked list to store terms sorted by exponent, combining like terms during insertion and handling zero coefficients. Defined Polynomial class in task1.h with Node, head, constructor, destructor, copy constructor, and assignment operator. Ignored negative exponents in the provided functions from initial header file. Tests from the manual were carried to ensure logic was correct.
-- Text Editor: To be implemented using doubly linked list.
-- UNO Game: To be implemented with vectors using fixed seed 1234.
+### Polynomial ADT:
+Implemented using a sorted singly linked list where terms are stored in descending order of exponents. This allows efficient insertion while automatically combining like terms and ignoring zero coefficients. The implementation ensures mathematical accuracy and correctness for addition, multiplication and differentiation while producing human-readable output.
+### Text Editor:
+Used a singly linked list to represent the text, with each node storing one character. A cursor position is tracked internally to support insertion, deletion and navigation operations. the design allows efficient modifications at any cursor position while maintaining correct test representation.
+### UNO Game:
+Modeled the game using object_oriented principles with:
+- Player hands as vectors of Card objects
+- Draw and discard piles as deques for efficient front/back operations
+- Rule-based turn management with special card handling (SKip, Reverse, Draw Two)
+- Fixed random seed for reproducible gameplay
+- Stalemate detection when no valid moves remain
 
 ## GitHub Link
 https://github.com/lnasir23/LaibaNasir_510419_Assignment_1
 
 ## Challenges Faced
-- Polynomial: Ensured proper merging of like terms in add, handled edge cases like zero coefficients, defined Polynomial class in task1.h, fixed IntelliSense underlines, and ensured non-negative exponenets only. Included destructor, copy constructor, and assignment operator for memeory safety.
-- Text Editor: (To be updated upon complettion.)
-- UNO Game: (To be updated upon complettion)
+### Polynomial:
+- Handling sign formatting for negative coefficients and ensuring proper mathematical notation.
+- Managing term combination when coefficients cancel out to zero
+- Implementing efficient polynomial multiplication without duplicate term creation
+- Ensuring the descending exponent order during inserts
+### Text Editor:
+- Managing the cursor boundary conditions
+- Handling where the insertion happens with respect to the cursor
+- Ensuring proper text representation with cursor symbol placement
+### UNO Game:
+- Implementing card matching priorities
+- Handing different action card results to give proper outcome
+- Making direction transitions when conditions are met

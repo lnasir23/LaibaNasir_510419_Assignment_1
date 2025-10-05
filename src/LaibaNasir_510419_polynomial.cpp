@@ -1,240 +1,250 @@
 #include "polynomial.h"
 #include <sstream>
-#include <cstdlib>
+#include <memory>
+#include <stdexcept>
 
 using namespace std;
 
-// Constructor
-Polynomial::Polynomial() : head(nullptr) {}
+class Term{
+public:
+    int coefficient;
+    int exponent;
+    std::unique_ptr<Term> next;
 
-// Destructor
-Polynomial::~Polynomial(){
-    clear();
-}
+    Term(int coeff, int exp) : coefficient(coeff), exponent(exp), next(nullptr) {}
 
-// Copy constructor
-Polynomial::Polynomial(const Polynomial& other) {
-    copy(other);
-}
+};
 
-// Assognment operator
-Polynomial& Polynomial::operator=(const Polynomial& other) {
-    if (this != &other) {
-        clear();
-        copy(other);
-    }
 
-    return *this;
-}
 
-// Clear helper method
-void Polynomial::clear() {
-    while (head) {
+class PolynomialImpl : public Polynomial {
+private:
+    std::unique_ptr<Term> head;
 
-    Node* temp = head;
-    head = head->next;
-    delete temp;
-}
-}
+public:
+    PolynomialImpl() : head(nullptr) {}
 
-// Copy helper method
-void Polynomial::copy(const Polynomial& other) {
-    head = nullptr;
-    Node* tail = nullptr;
-    for (Node* cur = other.head; cur; cur = cur->next) {
-        if (cur->exp>=0) {
-            Node* newNode = new Node(cur->coeff, cur->exp);
-            if (!head) {
-                head = tail = newNode;
+    PolynomialImpl(const PolynomialImpl& other) {
+
+        if (other.head) {
+            head = std::make_unique<Term>(other.head->coefficient, other.head->exponent);
+            Term* current = head.get();
+            Term* otherCurrent = other.head->next.get();
+
+            while (otherCurrent) {
+                current->next = std::make_unique<Term>(otherCurrent->coefficient, otherCurrent->exponent);
+                current = current->next.get();
+                otherCurrent = otherCurrent->next.get();
             }
-            else {
-                tail -> next = newNode;
-                tail = newNode;
-            }
+
         }
-    }
-}
-
-// Insert a term into the polynomial
-void Polynomial::insertTerm(int coefficient, int exponent) {
-
-    // Ignore zero coeff and non-positive exp
-    if (coefficient == 0 || exponent < 0) return;
-
-    Node* newNode = new Node(coefficient, exponent);
-
-    // Front insertion if empty or exp highest
-    if (!head || head->exp < exponent) {
-
-        newNode->next = head;
-        head = newNode;
-
-        return;
-    }
-
-    // Insertion point (exp desc)
-    Node* prev = nullptr;
-    Node* cur = head;
-
-    while (cur && cur->exp > exponent) {
-
-        prev = cur;
-        cur = cur->next;
 
     }
 
 
-    // Like terms combine
-    if (cur && cur->exp == exponent) {
+    // Insert a term into the polynomial
+    void insertTerm(int coefficient, int exponent) override {
 
-        cur->coeff += coefficient;
-        delete newNode;
+        // Ignore zero coeff and non-positive exp
+        if (coefficient == 0) return;
 
-        if(cur->coeff == 0) {
+        if (exponent < 0) throw std::invalid_argument("Exponent must be non-negative");
 
-            if (prev) {
-                prev-> next = cur->next;
-            } else {
+        // If empty or exp higher than head
+        if (!head || head->exponent < exponent) {
 
-                head = cur->next;
-            }
-            delete cur;
+            auto newTerm = std::make_unique<Term>(coefficient, exponent);
+            newTerm->next = std::move(head);
+            head = std::move(newTerm);
+            return;
+        }
+
+        // Insertion point
+        Term* current = head.get();
+        Term* prev = nullptr;
+
+        while (current && current->exponent > exponent) {
+
+            prev = current;
+            current = current->next.get();
+
         }
 
 
-        return;
-    }
+        // Like terms combine
+        if (current && current->exponent == exponent) {
 
+            current->coefficient += coefficient;
 
-    // Inserting new term
-    newNode->next = cur;
-    if (prev) {
-        prev->next = newNode;
-    } else {
+            if(current->coefficient == 0) {
 
+                if (prev) {
 
-        head = newNode;
-    }
-}
+                    prev-> next = std::move(current->next);
+                } else {
 
-
-// Return polynomial as a human-readable string
-std::string Polynomial::toString() const {
-
-    // Empty
-    if (!head) return "0";
-
-    ostringstream oss;
-    bool first = true;
-
-
-    for (Node* cur = head; cur; cur = cur->next) {
-        // In case of non-positie exp
-        if (cur->exp< 0) continue;
-
-        int abs_coeff = abs(cur->coeff);
-        bool negative = cur->coeff < 0;
-
-
-        // Sign handling
-        if (!first) {
-            oss << (negative ? " - " : " + ");
-
-        } else if (negative) {
-            oss << "-";
-        }
-
-
-        // Showing coeff > 1 and exp > 0
-        bool show_coeff = (abs_coeff != 1) || (cur->exp == 0);
-        if (show_coeff) oss << abs_coeff;
-
-        // x and exp
-        if (cur->exp > 0){
-            oss << "x";
-            if (cur->exp>1) {
-            oss << "^" << cur->exp;
+                    head = std::move(head->next);
+                }
             }
-        }
-        first = false;
-    }
-
-    if (oss.str().empty()) return "0";
-
-    return oss.str();
-
-}
-
-
-// Return a new polynomial that is the sum of this and other
-Polynomial Polynomial::add(const Polynomial& other) const{
-
-    Polynomial result;
-    Node* p1 = head;
-    Node* p2 = other.head;
-
-
-    // Merge terms in desc order
-    while (p1 || p2) {
-
-        if (p1 && (!p2 || p1->exp > p2->exp)) {
-            if (p1->exp >=0) {
-            result.insertTerm(p1->coeff, p1->exp);
-            }
-            p1 = p1->next;
-        } else if (p2 && (!p1 || p2->exp > p1->exp)) {
-            if (p1->exp >=0) {
-            result.insertTerm(p2->coeff, p2->exp);
-            }
-            p2 = p2->next;
 
         } else {
 
-            int sum_coeff = p1->coeff + p2->coeff;
-            if (sum_coeff != 0 && p1->exp >=0) {
-                result.insertTerm(sum_coeff, p1->exp);
+            // New term insert
+            auto newTerm = std::make_unique<Term>(coefficient, exponent);
+            if (prev) {
+                newTerm->next = std::move(prev->next);
+                prev->next = std::move(newTerm);
+
+            } else {
+                newTerm->next = std::move(head);
+                head = std::move(newTerm);
 
             }
-            p1 = p1->next;
-            p2 = p2->next;
         }
     }
 
-    return result;
-}
 
+    // Return polynomial as a human-readable string
+    std::string toString() const override {
 
-// Return a new polynomial that is the product of this and other
-Polynomial Polynomial::multiply(const Polynomial& other) const {
-    Polynomial result;
+        // Empty
+        if (!head) return "0";
 
-    for (Node* cur1 = head; cur1; cur1 = cur1->next) {
-        for (Node* cur2 = other.head; cur2; cur2 = cur2->next) {
-            int newCoeff = cur1->coeff * cur2->coeff;
-            int newExp = cur1->exp + cur2->exp;
+        ostringstream oss;
+        Term* current = head.get();
+        bool firstTerm = true;
 
-            if (newExp >=0) {
-            result.insertTerm(newCoeff, newExp);
+        while(current) {
+            int coeff = current->coefficient;
+            int exp = current->exponent;
+
+            if (!firstTerm) {
+                if (coeff > 0) {
+                    oss << " + ";
+
+                } else {
+                    oss << " - ";
+                    coeff = -coeff;
+                }
+            } else {
+                if (coeff < 0) {
+                    oss << "-";
+                    coeff = -coeff;
+                }
             }
-        }
-        
+            
+            if (exp == 0) {
+                oss << coeff;
+
+            } else if (exp == 1) {
+                if (coeff ==1) {
+                    oss << "x";
+
+                } else {
+                    oss << coeff << "x";
+
+                }
+            } else {
+                if (coeff == 1){
+                    oss << "x^" << exp;
+
+                } else {
+                    oss << coeff << "x^" << exp;
+                }
+            }
+
+            firstTerm = false;
+            current = current->next.get();
+
+            }
+
+        return oss.str();
+
     }
 
-    return result;
-}
 
 
-// Return a new polynomial that is the derivative of this polynomial
-Polynomial Polynomial::derivative() const {
+    // Return a new polynomial that is the sum of this and other
+    std::unique_ptr<Polynomial> add(const Polynomial& other) const override {
 
-    Polynomial result;
-    for (Node* cur = head; cur; cur = cur->next){
-        if (cur->exp > 0) {
-            result.insertTerm(cur->coeff * cur->exp, cur->exp -1);
+        const PolynomialImpl* otherImpl = dynamic_cast<const PolynomialImpl*>(&other);
+        if (!otherImpl) throw std::invalid_argument("Invalid polynomial type");
+
+
+        auto result = std::make_unique<PolynomialImpl>();
+
+
+            // Add all termd from this one polynomial
+    Term* current = head.get();
+        while (current) {
+            result->insertTerm(current->coefficient, current->exponent);
+            current = current->next.get();
+
+    
         }
+
+
+        // Add all other terms from other polynomial
+        current = otherImpl->head.get();
+        while (current) {
+            result->insertTerm(current->coefficient, current->exponent);
+            current = current->next.get();
+        }
+
+        return result;
     }
 
-    return result;
+
+    // Return a new polynomial that is the product of this and other
+    std::unique_ptr<Polynomial> multiply(const Polynomial& other) const override {
+        const PolynomialImpl* otherImpl = dynamic_cast<const PolynomialImpl*>(&other);
+        if (!otherImpl) throw std::invalid_argument("Invalid polynomial type");
+
+
+        auto result = std::make_unique<PolynomialImpl>();
+
+        Term* thisCurrent = head.get();
+        while (thisCurrent) {
+
+            Term* otherCurrent = otherImpl->head.get();
+            while (otherCurrent) {
+                int newCoeff = thisCurrent->coefficient * otherCurrent->coefficient;
+                int newExp = thisCurrent->exponent + otherCurrent->exponent;
+                result->insertTerm(newCoeff, newExp);
+                otherCurrent = otherCurrent->next.get();
+
+            }
+
+            thisCurrent = thisCurrent->next.get();
+
+        }
+
+        return result;
+
+    }
+
+    // Return a new polynomial that is the derivative of this polynomial
+    std::unique_ptr<Polynomial> derivative() const override {
+
+        auto result = std::make_unique<PolynomialImpl>();
+
+        Term* current = head.get();
+        while (current) {
+
+            if (current->exponent > 0) {
+                int newCoeff = current->coefficient * current->exponent;
+                int newExp = current->exponent - 1;
+                result->insertTerm(newCoeff, newExp);
+
+            }
+            current= current->next.get();
+        }
+
+        return result;
+
+    }
+};
+
+std::unique_ptr<Polynomial> Polynomial::create() {
+    return std::make_unique<PolynomialImpl>();
 }
-
-
